@@ -6,7 +6,10 @@
 class AckMessage : public DhcpMessage
 {
 public:
-    AckMessage();
+    AckMessage()
+        : DhcpMessage(DhcpMessageType::Ack)
+    {
+    }
 
     QString assignedIp() const { return m_assignedIp; }
     void setAssignedIp(const QString &ip) { m_assignedIp = ip; }
@@ -26,7 +29,13 @@ public:
     QString dnsServer() const { return m_dnsServer; }
     void setDnsServer(const QString &dns) { m_dnsServer = dns; }
 
-    QString summary() const override;
+    QString summary() const override
+    {
+        return QString("[ACK] Server=%1 AssignedIP=%2 LeaseTime=%3s → MAC=%4")
+            .arg(m_serverId, m_assignedIp)
+            .arg(m_leaseTime)
+            .arg(clientMac());
+    }
 
 private:
     QString m_assignedIp;

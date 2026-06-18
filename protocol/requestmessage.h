@@ -6,7 +6,10 @@
 class RequestMessage : public DhcpMessage
 {
 public:
-    RequestMessage();
+    RequestMessage()
+        : DhcpMessage(DhcpMessageType::Request)
+    {
+    }
 
     QString requestedIp() const { return m_requestedIp; }
     void setRequestedIp(const QString &ip) { m_requestedIp = ip; }
@@ -14,7 +17,11 @@ public:
     QString serverId() const { return m_serverId; }
     void setServerId(const QString &id) { m_serverId = id; }
 
-    QString summary() const override;
+    QString summary() const override
+    {
+        return QString("[Request] MAC=%1 RequestedIP=%2 Server=%3")
+            .arg(clientMac(), m_requestedIp, m_serverId);
+    }
 
 private:
     QString m_requestedIp;

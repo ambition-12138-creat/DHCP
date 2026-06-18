@@ -6,7 +6,10 @@
 class OfferMessage : public DhcpMessage
 {
 public:
-    OfferMessage();
+    OfferMessage()
+        : DhcpMessage(DhcpMessageType::Offer)
+    {
+    }
 
     QString offeredIp() const { return m_offeredIp; }
     void setOfferedIp(const QString &ip) { m_offeredIp = ip; }
@@ -26,7 +29,13 @@ public:
     QString dnsServer() const { return m_dnsServer; }
     void setDnsServer(const QString &dns) { m_dnsServer = dns; }
 
-    QString summary() const override;
+    QString summary() const override
+    {
+        return QString("[Offer] Server=%1 OfferedIP=%2 LeaseTime=%3s → MAC=%4")
+            .arg(m_serverId, m_offeredIp)
+            .arg(m_leaseTime)
+            .arg(clientMac());
+    }
 
 private:
     QString m_offeredIp;
