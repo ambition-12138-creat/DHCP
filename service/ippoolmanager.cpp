@@ -65,9 +65,9 @@ bool IPPoolManager::releaseIpByClient(const QString &clientMac)
 
 bool IPPoolManager::isAvailable(const QString &ip) const
 {
-    const auto *entry = std::find_if(m_pool.begin(), m_pool.end(),
+    auto it = std::find_if(m_pool.begin(), m_pool.end(),
         [&ip](const IPEntry &e) { return e.ipAddress() == ip; });
-    return entry != m_pool.end() && !entry->isAllocated();
+    return it != m_pool.end() && !it->isAllocated();
 }
 
 int IPPoolManager::availableCount() const

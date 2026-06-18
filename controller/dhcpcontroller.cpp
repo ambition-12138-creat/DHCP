@@ -66,9 +66,9 @@ void DHCPController::removeClient(const QString &mac)
 
 void DHCPController::startSimulation(const QString &clientMac)
 {
-    auto *client = std::find_if(m_clients.begin(), m_clients.end(),
+    auto it = std::find_if(m_clients.begin(), m_clients.end(),
         [&](DHCPClient *c) { return c->macAddress() == clientMac; });
-    if (client == m_clients.end()) {
+    if (it == m_clients.end()) {
         emit logMessage(QString("[错误] 客户端不存在: %1").arg(clientMac));
         return;
     }
@@ -174,12 +174,12 @@ void DHCPController::renewLease(const QString &clientMac)
 
 void DHCPController::doRenew(const QString &clientMac)
 {
-    auto *client = std::find_if(m_clients.begin(), m_clients.end(),
+    auto it = std::find_if(m_clients.begin(), m_clients.end(),
         [&](DHCPClient *c) { return c->macAddress() == clientMac; });
 
     RenewMessage renew;
     renew.setClientMac(clientMac);
-    renew.setCurrentIp(client != m_clients.end() ? (*client)->assignedIp() : "");
+    renew.setCurrentIp(it != m_clients.end() ? (*it)->assignedIp() : "");
     renew.setServerId(m_server->serverId());
     renew.setTransactionId(QString("TX-RENEW-%1-%2")
         .arg(clientMac.right(4))
