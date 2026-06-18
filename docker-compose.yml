@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  dhcp-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dhcp-simulator:latest
+    container_name: dhcp-simulator
+    ports:
+      - "6080:6080"   # noVNC Web 界面
+      - "5901:5901"   # VNC 直连端口 (可选)
+    environment:
+      - VNC_RESOLUTION=1280x800
+      - VNC_DEPTH=24
+    restart: unless-stopped
+    # 挂载日志目录 (可选)
+    # volumes:
+    #   - ./logs:/app/logs

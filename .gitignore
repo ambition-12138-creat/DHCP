@@ -1,0 +1,23 @@
+# Build outputs
+build/
+Debug/
+Release/
+*.o
+*.obj
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+
+# Qt Creator
+CMakeLists.txt.user
+*.pro.user
+*.autosave
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

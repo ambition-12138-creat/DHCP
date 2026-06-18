@@ -1,0 +1,13 @@
+build/
+CMakeLists.txt.user
+*.pro.user
+Makefile
+*.o
+*.obj
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+.vscode/
+.idea/
+.git/
