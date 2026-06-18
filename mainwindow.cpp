@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QScrollBar>
+#include <QStatusBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
