@@ -35,8 +35,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Qt6 运行时
-    qt6-base-dev \
-    libgl1-mesa-glx \
+    libqt6widgets6 \
+    libqt6core6 \
+    libqt6gui6 \
+    qt6-qpa-plugins \
+    libglx0 \
+    libgl1 \
     libxcb-cursor0 \
     # VNC + 轻量桌面
     tigervnc-standalone-server \
