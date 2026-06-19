@@ -1,5 +1,6 @@
 #include "flowwidget.h"
 #include "protocol/dhcpmessage.h"
+#include <QDateTime>
 
 FlowWidget::FlowWidget(QWidget *parent)
     : QWidget(parent)
@@ -10,36 +11,42 @@ FlowWidget::FlowWidget(QWidget *parent)
 void FlowWidget::setupUi()
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     m_titleLabel = new QLabel("DHCP 交互流程", this);
-    m_titleLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
+    m_titleLabel->setStyleSheet(
+        "font-weight: bold; font-size: 14px; color: #89b4fa; padding: 4px 0;");
     layout->addWidget(m_titleLabel);
 
     m_stepList = new QListWidget(this);
     m_stepList->setAlternatingRowColors(true);
+    m_stepList->setStyleSheet(
+        "QListWidget { background: #11111b; border: 1px solid #313244; border-radius: 4px; }"
+        "QListWidget::item { padding: 6px 10px; border-left: 4px solid transparent; }"
+        "QListWidget::item:selected { background: #313244; }");
     layout->addWidget(m_stepList);
-
-    setMinimumWidth(250);
 }
 
 void FlowWidget::addStep(const QString &stepName, std::shared_ptr<DhcpMessage> msg)
 {
-    // 为每个步骤设置对应图标颜色
     QString color;
-    if (stepName == "Discover") color = "#2196F3";
-    else if (stepName == "Offer") color = "#4CAF50";
-    else if (stepName == "Request") color = "#FF9800";
-    else if (stepName == "ACK") color = "#9C27B0";
-    else if (stepName == "Renew") color = "#00BCD4";
-    else color = "#757575";
+    QString icon;
+    if (stepName == "Discover")      { color = "#89b4fa"; icon = "●"; }
+    else if (stepName == "Offer")    { color = "#a6e3a1"; icon = "◆"; }
+    else if (stepName == "Request")  { color = "#fab387"; icon = "▲"; }
+    else if (stepName == "ACK")      { color = "#cba6f7"; icon = "★"; }
+    else if (stepName == "Renew")    { color = "#94e2d5"; icon = "↻"; }
+    else                             { color = "#a6adc8"; icon = "○"; }
 
-    QString text = QString("[%1] %2 %3")
-        .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
-        .arg(stepName)
-        .arg(msg ? msg->clientMac() : "");
+    QString ts = QDateTime::currentDateTime().toString("hh:mm:ss");
+    QString mac = msg ? msg->clientMac() : "";
 
-    auto *item = new QListWidgetItem(text);
-    item->setForeground(QColor(color));
+    auto *item = new QListWidgetItem(
+        QString("<span style='color:#585b70;'>%1</span>  "
+                "<span style='color:%2;'>%3</span>  "
+                "<b style='color:%4;'>%5</b>"
+                "<span style='color:#6c7086; margin-left:8px;'>%6</span>")
+            .arg(ts, color, icon, color, stepName, mac));
     m_stepList->addItem(item);
     m_stepList->scrollToBottom();
 }

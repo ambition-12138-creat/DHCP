@@ -22,12 +22,12 @@ void DHCPClient::setState(ClientState state)
 QString DHCPClient::stateString() const
 {
     switch (m_state) {
-    case ClientState::Idle:       return "Idle";
-    case ClientState::Selecting:  return "Selecting";
-    case ClientState::Requesting: return "Requesting";
-    case ClientState::Bound:      return "Bound";
-    case ClientState::Renewing:   return "Renewing";
-    case ClientState::Released:   return "Released";
+    case ClientState::Idle:       return "空闲";
+    case ClientState::Selecting:  return "选择中";
+    case ClientState::Requesting: return "请求中";
+    case ClientState::Bound:      return "已绑定";
+    case ClientState::Renewing:   return "续租中";
+    case ClientState::Released:   return "已释放";
     }
-    return "Unknown";
+    return "未知";
 }

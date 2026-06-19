@@ -5,8 +5,10 @@
 #include <QTextEdit>
 #include <QPushButton>
 #include <QComboBox>
-#include <QSplitter>
 #include <QLabel>
+#include <QToolBar>
+#include <QDockWidget>
+#include <QSplitter>
 #include <memory>
 #include "protocol/dhcpmessage.h"
 #include "model/dhcpclient.h"
@@ -41,18 +43,24 @@ private slots:
 private:
     void setupUi();
     void setupConnections();
+    void setupToolBar();
+    void setupDockWidgets();
+    void setupStatusBar();
     void refreshAll();
+    void updateStats();
 
     // 控制器
     DHCPController *m_controller;
 
     // 视图组件
+    FlowWidget *m_flowWidget;
     IPTableWidget *m_ipTable;
     LeaseTableWidget *m_leaseTable;
-    FlowWidget *m_flowWidget;
     QTextEdit *m_logView;
 
-    // 控制区
+    // 工具栏
+    QToolBar *m_toolBar;
+    QComboBox *m_clientCombo;
     QPushButton *m_btnStart;
     QPushButton *m_btnStartAll;
     QPushButton *m_btnRenew;
@@ -60,8 +68,15 @@ private:
     QPushButton *m_btnReset;
     QPushButton *m_btnAddClient;
     QPushButton *m_btnRemoveClient;
-    QComboBox *m_clientCombo;
+
+    // 停靠面板
+    QDockWidget *m_flowDock;
+    QDockWidget *m_logDock;
+
+    // 状态栏
     QLabel *m_statusLabel;
+    QLabel *m_poolStatsLabel;
+    QLabel *m_leaseStatsLabel;
 };
 
 #endif // MAINWINDOW_H

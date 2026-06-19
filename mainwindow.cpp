@@ -14,6 +14,8 @@
 #include <QInputDialog>
 #include <QScrollBar>
 #include <QStatusBar>
+#include <QSettings>
+#include <QMenuBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -32,108 +34,174 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 更新客户端下拉框
     for (auto *client : m_controller->clients()) {
-        m_clientCombo->addItem(QString("%1 (%2)")
+        m_clientCombo->addItem(QString("%1  [%2]")
             .arg(client->macAddress(), client->stateString()));
     }
 
     refreshAll();
     m_statusLabel->setText("就绪");
+
+    // 恢复停靠面板布局
+    QSettings settings;
+    restoreState(settings.value("windowState").toByteArray());
+    restoreGeometry(settings.value("windowGeometry").toByteArray());
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow()
+{
+    QSettings settings;
+    settings.setValue("windowState", saveState());
+    settings.setValue("windowGeometry", saveGeometry());
+}
+
+// ─── UI Setup ───────────────────────────────────────────
 
 void MainWindow::setupUi()
 {
-    auto *centralWidget = new QWidget(this);
-    setCentralWidget(centralWidget);
+    setupToolBar();
+    setupDockWidgets();
+    setupStatusBar();
+    setCorner(Qt::BottomLeftCorner,  Qt::LeftDockWidgetArea);
+    setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
+    setDockOptions(AnimatedDocks | AllowNestedDocks | AllowTabbedDocks);
 
-    auto *mainLayout = new QVBoxLayout(centralWidget);
+    QMenuBar *mb = menuBar();
+    QMenu *viewMenu = mb->addMenu("视图(&V)");
+    viewMenu->addAction(m_flowDock->toggleViewAction());
+    viewMenu->addAction(m_logDock->toggleViewAction());
+}
 
-    // ======== 控制栏 ========
-    auto *controlLayout = new QHBoxLayout();
+void MainWindow::setupToolBar()
+{
+    m_toolBar = addToolBar("主工具栏");
+    m_toolBar->setObjectName("mainToolBar");
+    m_toolBar->setMovable(false);
+    m_toolBar->setFloatable(false);
+
+    // 客户端选择器
+    auto *lbl = new QLabel("客户端 ", this);
+    lbl->setStyleSheet("color: #89b4fa; font-weight: bold; background: transparent;");
+    m_toolBar->addWidget(lbl);
 
     m_clientCombo = new QComboBox(this);
-    m_clientCombo->setMinimumWidth(200);
+    m_clientCombo->setMinimumWidth(220);
+    m_clientCombo->setToolTip("选择要操作的客户端");
+    m_toolBar->addWidget(m_clientCombo);
 
-    m_btnStart = new QPushButton("开始模拟", this);
-    m_btnStartAll = new QPushButton("全部模拟", this);
-    m_btnRenew = new QPushButton("续租", this);
-    m_btnRelease = new QPushButton("释放", this);
-    m_btnReset = new QPushButton("重置", this);
-    m_btnAddClient = new QPushButton("添加客户端", this);
-    m_btnRemoveClient = new QPushButton("移除客户端", this);
+    m_toolBar->addSeparator();
 
-    controlLayout->addWidget(new QLabel("选择客户端:", this));
-    controlLayout->addWidget(m_clientCombo);
-    controlLayout->addWidget(m_btnStart);
-    controlLayout->addWidget(m_btnStartAll);
-    controlLayout->addWidget(m_btnRenew);
-    controlLayout->addWidget(m_btnRelease);
-    controlLayout->addWidget(m_btnReset);
-    controlLayout->addWidget(m_btnAddClient);
-    controlLayout->addWidget(m_btnRemoveClient);
-    controlLayout->addStretch();
+    // 操作按钮
+    m_btnStart    = new QPushButton("▶ 开始模拟", this);
+    m_btnStartAll = new QPushButton("▶▶ 全部模拟", this);
+    m_btnRenew    = new QPushButton("↻ 续租", this);
+    m_btnRelease  = new QPushButton("✕ 释放", this);
+    m_btnReset    = new QPushButton("⟲ 重置", this);
 
-    auto *controlGroup = new QGroupBox("控制面板", this);
-    controlGroup->setLayout(controlLayout);
-    mainLayout->addWidget(controlGroup);
+    m_btnStart   ->setToolTip("对选中的客户端执行 DHCP 四步交互");
+    m_btnStartAll->setToolTip("对所有客户端依次执行 DHCP 交互");
+    m_btnRenew   ->setToolTip("续租选中客户端的 IP 租约");
+    m_btnRelease ->setToolTip("释放选中客户端的 IP 租约");
+    m_btnReset   ->setToolTip("重置整个系统状态");
 
-    // ======== 主内容区 (Splitter) ========
-    auto *splitter = new QSplitter(Qt::Horizontal, this);
+    m_toolBar->addWidget(m_btnStart);
+    m_toolBar->addWidget(m_btnStartAll);
+    m_toolBar->addWidget(m_btnRenew);
+    m_toolBar->addWidget(m_btnRelease);
+    m_toolBar->addWidget(m_btnReset);
 
-    // 左侧: 流程面板
+    m_toolBar->addSeparator();
+
+    // 客户端管理按钮
+    m_btnAddClient    = new QPushButton("＋ 添加", this);
+    m_btnRemoveClient = new QPushButton("－ 移除", this);
+
+    m_btnAddClient   ->setToolTip("添加一个新的客户端");
+    m_btnRemoveClient->setToolTip("移除选中的客户端");
+
+    m_toolBar->addWidget(m_btnAddClient);
+    m_toolBar->addWidget(m_btnRemoveClient);
+
+    // 右侧弹簧 + 统计
+    auto *spacer = new QWidget(this);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_toolBar->addWidget(spacer);
+
+    m_poolStatsLabel = new QLabel(this);
+    m_poolStatsLabel->setStyleSheet("color: #a6e3a1; font-weight: bold; background: transparent; padding: 0 8px;");
+    m_toolBar->addWidget(m_poolStatsLabel);
+
+    m_leaseStatsLabel = new QLabel(this);
+    m_leaseStatsLabel->setStyleSheet("color: #89b4fa; font-weight: bold; background: transparent; padding: 0 8px;");
+    m_toolBar->addWidget(m_leaseStatsLabel);
+}
+
+void MainWindow::setupDockWidgets()
+{
+    // ── 左侧：交互流程 ──
     m_flowWidget = new FlowWidget(this);
-    splitter->addWidget(m_flowWidget);
+    m_flowDock = new QDockWidget("DHCP 交互流程", this);
+    m_flowDock->setObjectName("flowDock");
+    m_flowDock->setWidget(m_flowWidget);
+    m_flowDock->setMinimumWidth(280);
+    m_flowDock->setFeatures(QDockWidget::DockWidgetMovable |
+                            QDockWidget::DockWidgetFloatable |
+                            QDockWidget::DockWidgetClosable);
+    addDockWidget(Qt::LeftDockWidgetArea, m_flowDock);
 
-    // 中间: 表格面板
-    auto *tableWidget = new QWidget(this);
-    auto *tableLayout = new QVBoxLayout(tableWidget);
-    tableLayout->setContentsMargins(0, 0, 0, 0);
+    // ── 右侧：系统日志 ──
+    m_logView = new QTextEdit(this);
+    m_logView->setReadOnly(true);
+    m_logView->setMinimumWidth(320);
 
+    m_logDock = new QDockWidget("系统日志", this);
+    m_logDock->setObjectName("logDock");
+    m_logDock->setWidget(m_logView);
+    m_logDock->setFeatures(QDockWidget::DockWidgetMovable |
+                           QDockWidget::DockWidgetFloatable |
+                           QDockWidget::DockWidgetClosable);
+    addDockWidget(Qt::RightDockWidgetArea, m_logDock);
+
+    // ── 中央：表格区域（垂直分割） ──
+    auto *centerSplitter = new QSplitter(Qt::Vertical, this);
+
+    // IP 地址池
     auto *ipGroup = new QGroupBox("IP 地址池", this);
     auto *ipLayout = new QVBoxLayout(ipGroup);
     m_ipTable = new IPTableWidget(this);
     ipLayout->addWidget(m_ipTable);
-    tableLayout->addWidget(ipGroup);
+    centerSplitter->addWidget(ipGroup);
 
+    // 租约信息
     auto *leaseGroup = new QGroupBox("租约信息", this);
     auto *leaseLayout = new QVBoxLayout(leaseGroup);
     m_leaseTable = new LeaseTableWidget(this);
     leaseLayout->addWidget(m_leaseTable);
-    tableLayout->addWidget(leaseGroup);
+    centerSplitter->addWidget(leaseGroup);
 
-    splitter->addWidget(tableWidget);
+    centerSplitter->setStretchFactor(0, 1);
+    centerSplitter->setStretchFactor(1, 1);
 
-    // 右侧: 日志面板
-    auto *logGroup = new QGroupBox("系统日志", this);
-    auto *logLayout = new QVBoxLayout(logGroup);
-    m_logView = new QTextEdit(this);
-    m_logView->setReadOnly(true);
-    m_logView->setStyleSheet("font-family: Consolas, monospace; font-size: 12px;");
-    m_logView->setMinimumWidth(300);
-    logLayout->addWidget(m_logView);
-    splitter->addWidget(logGroup);
-
-    splitter->setStretchFactor(0, 1); // 流程
-    splitter->setStretchFactor(1, 2); // 表格
-    splitter->setStretchFactor(2, 2); // 日志
-
-    mainLayout->addWidget(splitter, 1);
-
-    // ======== 状态栏 ========
-    m_statusLabel = new QLabel(this);
-    statusBar()->addWidget(m_statusLabel);
+    setCentralWidget(centerSplitter);
 }
+
+void MainWindow::setupStatusBar()
+{
+    m_statusLabel = new QLabel(this);
+    m_statusLabel->setStyleSheet("color: #a6adc8; padding-left: 4px;");
+    statusBar()->addWidget(m_statusLabel, 1);
+}
+
+// ─── Connections ────────────────────────────────────────
 
 void MainWindow::setupConnections()
 {
     // 按钮 → 槽函数
-    connect(m_btnStart, &QPushButton::clicked, this, &MainWindow::onStartSimulation);
+    connect(m_btnStart,    &QPushButton::clicked, this, &MainWindow::onStartSimulation);
     connect(m_btnStartAll, &QPushButton::clicked, this, &MainWindow::onStartAll);
-    connect(m_btnRenew, &QPushButton::clicked, this, &MainWindow::onRenew);
-    connect(m_btnRelease, &QPushButton::clicked, this, &MainWindow::onRelease);
-    connect(m_btnReset, &QPushButton::clicked, this, &MainWindow::onReset);
-    connect(m_btnAddClient, &QPushButton::clicked, this, &MainWindow::onAddClient);
+    connect(m_btnRenew,    &QPushButton::clicked, this, &MainWindow::onRenew);
+    connect(m_btnRelease,  &QPushButton::clicked, this, &MainWindow::onRelease);
+    connect(m_btnReset,    &QPushButton::clicked, this, &MainWindow::onReset);
+    connect(m_btnAddClient,    &QPushButton::clicked, this, &MainWindow::onAddClient);
     connect(m_btnRemoveClient, &QPushButton::clicked, this, &MainWindow::onRemoveClient);
 
     // 控制器 → UI 更新
@@ -153,6 +221,8 @@ void MainWindow::setupConnections()
     connect(m_controller->leaseManager(), &LeaseManager::leasesChanged,
             this, &MainWindow::refreshAll);
 }
+
+// ─── Slots ──────────────────────────────────────────────
 
 void MainWindow::onStartSimulation()
 {
@@ -201,7 +271,7 @@ void MainWindow::onAddClient()
 
     if (ok && !mac.isEmpty()) {
         m_controller->addClient(mac);
-        m_clientCombo->addItem(QString("%1 (Idle)").arg(mac));
+        m_clientCombo->addItem(QString("%1  [Idle]").arg(mac));
     }
 }
 
@@ -230,35 +300,24 @@ void MainWindow::onSimulationStep(const QString &step,
 void MainWindow::onLogMessage(const QString &msg)
 {
     m_logView->append(msg);
-    // 自动滚动到底部
     QScrollBar *sb = m_logView->verticalScrollBar();
     sb->setValue(sb->maximum());
 }
 
 void MainWindow::onClientStateChanged(const QString &mac, ClientState state)
 {
-    // 更新下拉框中的状态显示
-    static const QStringList stateNames = {"Idle", "Selecting", "Requesting",
-                                            "Bound", "Renewing", "Released"};
+    static const QStringList stateNames = {"空闲", "选择中", "请求中",
+                                            "已绑定", "续租中", "已释放"};
     for (int i = 0; i < m_clientCombo->count(); ++i) {
         if (m_clientCombo->itemText(i).startsWith(mac)) {
-            m_clientCombo->setItemText(i, QString("%1 (%2)")
+            m_clientCombo->setItemText(i, QString("%1  [%2]")
                 .arg(mac, stateNames.value(static_cast<int>(state), "Unknown")));
             break;
         }
     }
 
-    // 更新 MAC 地址的状态映射
-    QString stateStr;
-    switch (state) {
-    case ClientState::Idle:       stateStr = "空闲"; break;
-    case ClientState::Selecting:  stateStr = "选择中"; break;
-    case ClientState::Requesting: stateStr = "请求中"; break;
-    case ClientState::Bound:      stateStr = "已绑定"; break;
-    case ClientState::Renewing:   stateStr = "续租中"; break;
-    case ClientState::Released:   stateStr = "已释放"; break;
-    }
-    onLogMessage(QString("  → 客户端 %1 状态: %2").arg(mac, stateStr));
+    onLogMessage(QString("  → 客户端 %1 状态: %2")
+        .arg(mac, stateNames.value(static_cast<int>(state), "未知")));
 }
 
 void MainWindow::onSimulationComplete(const QString &clientMac)
@@ -266,8 +325,27 @@ void MainWindow::onSimulationComplete(const QString &clientMac)
     m_statusLabel->setText(QString("模拟完成: %1").arg(clientMac));
 }
 
+// ─── Refresh ────────────────────────────────────────────
+
 void MainWindow::refreshAll()
 {
     m_ipTable->refresh(m_controller->poolManager()->entries());
     m_leaseTable->refresh(m_controller->leaseManager()->activeLeases());
+    updateStats();
+}
+
+void MainWindow::updateStats()
+{
+    auto *pm = m_controller->poolManager();
+    auto *lm = m_controller->leaseManager();
+
+    int total = pm->totalCount();
+    int avail = pm->availableCount();
+    int used  = total - avail;
+    int pct   = total > 0 ? (used * 100 / total) : 0;
+
+    m_poolStatsLabel->setText(
+        QString("IP池: %1/%2 (%3%)").arg(used).arg(total).arg(pct));
+    m_leaseStatsLabel->setText(
+        QString("活跃租约: %1").arg(lm->activeCount()));
 }

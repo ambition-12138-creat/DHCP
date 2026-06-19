@@ -1,7 +1,7 @@
 # ============================================================
 # 阶段1: 编译构建
 # ============================================================
-FROM ubuntu:24.04 AS builder
+FROM ubuntu:22.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Asia/Shanghai
@@ -23,7 +23,7 @@ RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
 # ============================================================
 # 阶段2: 运行时镜像 (VNC 远程桌面)
 # ============================================================
-FROM ubuntu:24.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Asia/Shanghai \
