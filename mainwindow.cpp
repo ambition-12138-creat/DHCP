@@ -16,6 +16,7 @@
 #include <QStatusBar>
 #include <QSettings>
 #include <QMenuBar>
+#include <algorithm>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -332,6 +333,19 @@ void MainWindow::refreshAll()
     m_ipTable->refresh(m_controller->poolManager()->entries());
     m_leaseTable->refresh(m_controller->leaseManager()->activeLeases());
     updateStats();
+
+    // 同步下拉框状态
+    for (int i = 0; i < m_clientCombo->count(); ++i) {
+        QString text = m_clientCombo->itemText(i);
+        QString mac  = text.split(" ").first();
+        auto it = std::find_if(m_controller->clients().begin(),
+                               m_controller->clients().end(),
+            [&](DHCPClient *c) { return c->macAddress() == mac; });
+        if (it != m_controller->clients().end()) {
+            m_clientCombo->setItemText(i,
+                QString("%1  [%2]").arg(mac, (*it)->stateString()));
+        }
+    }
 }
 
 void MainWindow::updateStats()

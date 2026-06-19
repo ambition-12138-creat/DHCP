@@ -29,7 +29,10 @@ LeaseInfo *LeaseManager::createLease(const QString &clientMac, const QString &ip
 bool LeaseManager::renewLease(const QString &clientMac, int additionalSeconds)
 {
     auto *lease = findByClient(clientMac);
-    if (!lease || lease->status() != LeaseStatus::Active)
+    if (!lease)
+        return false;
+    if (lease->status() != LeaseStatus::Active &&
+        lease->status() != LeaseStatus::Renewed)
         return false;
 
     lease->renew(additionalSeconds);
@@ -80,7 +83,8 @@ QVector<LeaseInfo> LeaseManager::activeLeases() const
 {
     QVector<LeaseInfo> active;
     for (const auto &l : m_leases) {
-        if (l.status() == LeaseStatus::Active && !l.isExpired())
+        if ((l.status() == LeaseStatus::Active ||
+             l.status() == LeaseStatus::Renewed) && !l.isExpired())
             active.append(l);
     }
     return active;
