@@ -28,6 +28,9 @@ void IPPoolManager::initPool(const QStringList &ipList)
 
 QString IPPoolManager::allocateIp(const QString &clientMac)
 {
+    // 先释放该客户端已有的所有IP分配，防止重复占用
+    releaseIpByClient(clientMac);
+
     for (auto &entry : m_pool) {
         if (!entry.isAllocated()) {
             entry.allocate(clientMac);
@@ -36,7 +39,7 @@ QString IPPoolManager::allocateIp(const QString &clientMac)
             return entry.ipAddress();
         }
     }
-    return QString(); // 无可用地址
+    return QString();
 }
 
 bool IPPoolManager::releaseIp(const QString &ip)
@@ -53,14 +56,17 @@ bool IPPoolManager::releaseIp(const QString &ip)
 
 bool IPPoolManager::releaseIpByClient(const QString &clientMac)
 {
-    auto *entry = findByClient(clientMac);
-    if (entry && entry->isAllocated()) {
-        entry->release();
-        emit ipReleased(entry->ipAddress());
-        emit poolChanged();
-        return true;
+    bool released = false;
+    for (auto &entry : m_pool) {
+        if (entry.clientMac() == clientMac && entry.isAllocated()) {
+            entry.release();
+            emit ipReleased(entry.ipAddress());
+            released = true;
+        }
     }
-    return false;
+    if (released)
+        emit poolChanged();
+    return released;
 }
 
 bool IPPoolManager::isAvailable(const QString &ip) const

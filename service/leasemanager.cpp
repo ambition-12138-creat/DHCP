@@ -12,6 +12,12 @@ LeaseManager::LeaseManager(QObject *parent)
 LeaseInfo *LeaseManager::createLease(const QString &clientMac, const QString &ip,
                                       int durationSeconds)
 {
+    // 先移除该客户端已有的所有租约
+    m_leases.erase(
+        std::remove_if(m_leases.begin(), m_leases.end(),
+            [&clientMac](const LeaseInfo &l) { return l.clientMac() == clientMac; }),
+        m_leases.end());
+
     LeaseInfo lease;
     lease.setClientMac(clientMac);
     lease.setIpAddress(ip);
@@ -43,14 +49,18 @@ bool LeaseManager::renewLease(const QString &clientMac, int additionalSeconds)
 
 bool LeaseManager::releaseLease(const QString &clientMac)
 {
-    auto *lease = findByClient(clientMac);
-    if (!lease)
-        return false;
-
-    lease->release();
-    emit leaseReleased(clientMac, lease->ipAddress());
-    emit leasesChanged();
-    return true;
+    bool released = false;
+    for (auto &lease : m_leases) {
+        if (lease.clientMac() == clientMac &&
+            lease.status() != LeaseStatus::Released) {
+            lease.release();
+            emit leaseReleased(clientMac, lease.ipAddress());
+            released = true;
+        }
+    }
+    if (released)
+        emit leasesChanged();
+    return released;
 }
 
 bool LeaseManager::releaseLeaseByIp(const QString &ip)
