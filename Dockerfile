@@ -49,6 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     websockify \
     openbox \
     x11-xserver-utils \
+    x11-utils \
     xfonts-base \
     xterm \
     # 工具
@@ -56,13 +57,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 创建 VNC 密码文件目录
 RUN mkdir -p /root/.vnc
 
 # 复制编译产物
 COPY --from=builder /src/build/DhcpSimulator /app/DhcpSimulator
 
-# Supervisor 配置 — 同时管理 VNC 和 noVNC
+# 启动脚本 — 按顺序等待依赖就绪
+RUN echo '#!/bin/bash'                                  >  /app/startup.sh && \
+    echo 'set -e'                                       >> /app/startup.sh && \
+    echo ''                                             >> /app/startup.sh && \
+    echo '# 等待 VNC 服务就绪'                          >> /app/startup.sh && \
+    echo 'for i in $(seq 1 30); do'                     >> /app/startup.sh && \
+    echo '  if xdpyinfo -display :1 >/dev/null 2>&1; then break; fi' >> /app/startup.sh && \
+    echo '  sleep 1'                                    >> /app/startup.sh && \
+    echo 'done'                                         >> /app/startup.sh && \
+    echo ''                                             >> /app/startup.sh && \
+    echo '# 启动窗口管理器（后台）'                     >> /app/startup.sh && \
+    echo 'openbox &'                                    >> /app/startup.sh && \
+    echo 'sleep 2'                                      >> /app/startup.sh && \
+    echo ''                                             >> /app/startup.sh && \
+    echo '# 启动 DHCP 模拟器'                           >> /app/startup.sh && \
+    echo 'exec /app/DhcpSimulator'                      >> /app/startup.sh && \
+    chmod +x /app/startup.sh
+
+# Supervisor 配置
 RUN echo '[supervisord]'              >  /etc/supervisor/conf.d/app.conf && \
     echo 'nodaemon=true'              >> /etc/supervisor/conf.d/app.conf && \
     echo 'logfile=/dev/stdout'        >> /etc/supervisor/conf.d/app.conf && \
@@ -76,15 +94,11 @@ RUN echo '[supervisord]'              >  /etc/supervisor/conf.d/app.conf && \
     echo 'command=websockify --web /usr/share/novnc 0.0.0.0:6080 localhost:5901' >> /etc/supervisor/conf.d/app.conf && \
     echo 'autorestart=true'           >> /etc/supervisor/conf.d/app.conf && \
     echo ''                           >> /etc/supervisor/conf.d/app.conf && \
-    echo '[program:openbox]'          >> /etc/supervisor/conf.d/app.conf && \
-    echo 'command=openbox'            >> /etc/supervisor/conf.d/app.conf && \
+    echo '[program:app]'              >> /etc/supervisor/conf.d/app.conf && \
+    echo 'command=/app/startup.sh'    >> /etc/supervisor/conf.d/app.conf && \
     echo 'environment=DISPLAY=:1'     >> /etc/supervisor/conf.d/app.conf && \
     echo 'autorestart=true'           >> /etc/supervisor/conf.d/app.conf && \
-    echo ''                           >> /etc/supervisor/conf.d/app.conf && \
-    echo '[program:app]'              >> /etc/supervisor/conf.d/app.conf && \
-    echo 'command=/app/DhcpSimulator' >> /etc/supervisor/conf.d/app.conf && \
-    echo 'environment=DISPLAY=:1'     >> /etc/supervisor/conf.d/app.conf && \
-    echo 'autorestart=true'           >> /etc/supervisor/conf.d/app.conf
+    echo 'startsecs=5'                >> /etc/supervisor/conf.d/app.conf
 
 EXPOSE 5901 6080
 
