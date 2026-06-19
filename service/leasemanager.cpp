@@ -77,6 +77,14 @@ bool LeaseManager::releaseLeaseByIp(const QString &ip)
 
 LeaseInfo *LeaseManager::findByClient(const QString &clientMac)
 {
+    // 优先返回活跃/已续租状态的租约
+    for (auto &l : m_leases) {
+        if (l.clientMac() == clientMac &&
+            (l.status() == LeaseStatus::Active ||
+             l.status() == LeaseStatus::Renewed))
+            return &l;
+    }
+    // 兜底：返回任意匹配的租约
     auto it = std::find_if(m_leases.begin(), m_leases.end(),
         [&clientMac](const LeaseInfo &l) { return l.clientMac() == clientMac; });
     return it != m_leases.end() ? &(*it) : nullptr;

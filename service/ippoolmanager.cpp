@@ -106,6 +106,12 @@ IPEntry *IPPoolManager::findByIp(const QString &ip)
 
 IPEntry *IPPoolManager::findByClient(const QString &clientMac)
 {
+    // 优先返回已分配的条目
+    for (auto &e : m_pool) {
+        if (e.clientMac() == clientMac && e.isAllocated())
+            return &e;
+    }
+    // 兜底：返回任意匹配的条目
     auto it = std::find_if(m_pool.begin(), m_pool.end(),
         [&clientMac](const IPEntry &e) { return e.clientMac() == clientMac; });
     return it != m_pool.end() ? &(*it) : nullptr;
