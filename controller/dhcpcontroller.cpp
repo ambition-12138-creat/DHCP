@@ -177,9 +177,13 @@ void DHCPController::doRenew(const QString &clientMac)
     auto it = std::find_if(m_clients.begin(), m_clients.end(),
         [&](DHCPClient *c) { return c->macAddress() == clientMac; });
 
+    QString assignedIp = it != m_clients.end() ? (*it)->assignedIp() : "";
+    emit logMessage(QString("[调试] 续租: MAC=%1, assignedIp=%2, leaseCount=%3")
+        .arg(clientMac, assignedIp).arg(m_leaseManager->activeCount()));
+
     RenewMessage renew;
     renew.setClientMac(clientMac);
-    renew.setCurrentIp(it != m_clients.end() ? (*it)->assignedIp() : "");
+    renew.setCurrentIp(assignedIp);
     renew.setServerId(m_server->serverId());
     renew.setTransactionId(QString("TX-RENEW-%1-%2")
         .arg(clientMac.right(4))
@@ -192,13 +196,17 @@ void DHCPController::doRenew(const QString &clientMac)
     if (ack) {
         m_stateMachine->transitionTo(clientMac, ClientState::Bound);
         emit simulationStep("ACK", std::make_shared<AckMessage>(*ack));
+        emit logMessage(QString("[调试] 续租成功, leaseCount=%1")
+            .arg(m_leaseManager->activeCount()));
+    } else {
+        emit logMessage(QString("[调试] 续租失败: processRenew返回null"));
     }
 }
 
 void DHCPController::releaseLease(const QString &clientMac)
 {
-    m_poolManager->releaseIpByClient(clientMac);
-    m_leaseManager->releaseLease(clientMac);
+    bool ipReleased = m_poolManager->releaseIpByClient(clientMac);
+    bool leaseReleased = m_leaseManager->releaseLease(clientMac);
     m_stateMachine->transitionTo(clientMac, ClientState::Released);
 
     auto it = std::find_if(m_clients.begin(), m_clients.end(),
@@ -206,12 +214,17 @@ void DHCPController::releaseLease(const QString &clientMac)
     if (it != m_clients.end())
         (*it)->setAssignedIp(QString());
 
-    emit logMessage(QString("[系统] 租约已释放: MAC=%1").arg(clientMac));
+    emit logMessage(QString("[系统] 租约已释放: MAC=%1 (IP释放=%2, 租约释放=%3)")
+        .arg(clientMac).arg(ipReleased).arg(leaseReleased));
 }
 
 void DHCPController::resetAll()
 {
+    emit logMessage(QString("[调试] resetAll: 客户端总数=%1, 活跃租约=%2")
+        .arg(m_clients.size()).arg(m_leaseManager->activeCount()));
     for (auto *client : m_clients) {
+        emit logMessage(QString("[调试] 重置客户端: MAC=%1, state=%2")
+            .arg(client->macAddress(), client->stateString()));
         releaseLease(client->macAddress());
         m_stateMachine->transitionTo(client->macAddress(), ClientState::Idle);
     }
