@@ -265,9 +265,10 @@ int main(int argc, char *argv[])
 
     MainWindow window;
     window.setWindowTitle("DHCP 协议模拟系统");
+    window.setWindowFlags(Qt::Window | Qt::WindowCloseButtonHint);
     window.resize(1200, 800);
     window.setMinimumSize(900, 600);
-    window.show();
+    window.showMaximized();
 
     return app.exec();
 }
