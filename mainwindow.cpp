@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     refreshAll();
-    m_statusLabel->setText("就绪");
+    m_statusLabel->setText("Ready");
 
     // 恢复停靠面板布局
     QSettings settings;
@@ -67,42 +67,42 @@ void MainWindow::setupUi()
     setDockOptions(AnimatedDocks | AllowNestedDocks | AllowTabbedDocks);
 
     QMenuBar *mb = menuBar();
-    QMenu *viewMenu = mb->addMenu("视图(&V)");
+    QMenu *viewMenu = mb->addMenu("&View");
     viewMenu->addAction(m_flowDock->toggleViewAction());
     viewMenu->addAction(m_logDock->toggleViewAction());
 }
 
 void MainWindow::setupToolBar()
 {
-    m_toolBar = addToolBar("主工具栏");
+    m_toolBar = addToolBar("Main Toolbar");
     m_toolBar->setObjectName("mainToolBar");
     m_toolBar->setMovable(false);
     m_toolBar->setFloatable(false);
 
     // 客户端选择器
-    auto *lbl = new QLabel("客户端 ", this);
+    auto *lbl = new QLabel("Client ", this);
     lbl->setStyleSheet("color: #89b4fa; font-weight: bold; background: transparent;");
     m_toolBar->addWidget(lbl);
 
     m_clientCombo = new QComboBox(this);
     m_clientCombo->setMinimumWidth(220);
-    m_clientCombo->setToolTip("选择要操作的客户端");
+    m_clientCombo->setToolTip("Select a client to operate on");
     m_toolBar->addWidget(m_clientCombo);
 
     m_toolBar->addSeparator();
 
     // 操作按钮
-    m_btnStart    = new QPushButton("▶ 开始模拟", this);
-    m_btnStartAll = new QPushButton("▶▶ 全部模拟", this);
-    m_btnRenew    = new QPushButton("↻ 续租", this);
-    m_btnRelease  = new QPushButton("✕ 释放", this);
-    m_btnReset    = new QPushButton("⟲ 重置", this);
+    m_btnStart    = new QPushButton("Start", this);
+    m_btnStartAll = new QPushButton("Start All", this);
+    m_btnRenew    = new QPushButton("Renew", this);
+    m_btnRelease  = new QPushButton("Release", this);
+    m_btnReset    = new QPushButton("Reset", this);
 
-    m_btnStart   ->setToolTip("对选中的客户端执行 DHCP 四步交互");
-    m_btnStartAll->setToolTip("对所有客户端依次执行 DHCP 交互");
-    m_btnRenew   ->setToolTip("续租选中客户端的 IP 租约");
-    m_btnRelease ->setToolTip("释放选中客户端的 IP 租约");
-    m_btnReset   ->setToolTip("重置整个系统状态");
+    m_btnStart   ->setToolTip("Run DHCP 4-step exchange for the selected client");
+    m_btnStartAll->setToolTip("Run DHCP exchange for all clients sequentially");
+    m_btnRenew   ->setToolTip("Renew the IP lease for the selected client");
+    m_btnRelease ->setToolTip("Release the IP lease for the selected client");
+    m_btnReset   ->setToolTip("Reset the entire system state");
 
     m_toolBar->addWidget(m_btnStart);
     m_toolBar->addWidget(m_btnStartAll);
@@ -113,11 +113,11 @@ void MainWindow::setupToolBar()
     m_toolBar->addSeparator();
 
     // 客户端管理按钮
-    m_btnAddClient    = new QPushButton("＋ 添加", this);
-    m_btnRemoveClient = new QPushButton("－ 移除", this);
+    m_btnAddClient    = new QPushButton("Add Client", this);
+    m_btnRemoveClient = new QPushButton("Remove Client", this);
 
-    m_btnAddClient   ->setToolTip("添加一个新的客户端");
-    m_btnRemoveClient->setToolTip("移除选中的客户端");
+    m_btnAddClient   ->setToolTip("Add a new client");
+    m_btnRemoveClient->setToolTip("Remove the selected client");
 
     m_toolBar->addWidget(m_btnAddClient);
     m_toolBar->addWidget(m_btnRemoveClient);
@@ -140,7 +140,7 @@ void MainWindow::setupDockWidgets()
 {
     // ── 左侧：交互流程 ──
     m_flowWidget = new FlowWidget(this);
-    m_flowDock = new QDockWidget("DHCP 交互流程", this);
+    m_flowDock = new QDockWidget("DHCP Flow", this);
     m_flowDock->setObjectName("flowDock");
     m_flowDock->setWidget(m_flowWidget);
     m_flowDock->setMinimumWidth(280);
@@ -154,7 +154,7 @@ void MainWindow::setupDockWidgets()
     m_logView->setReadOnly(true);
     m_logView->setMinimumWidth(320);
 
-    m_logDock = new QDockWidget("系统日志", this);
+    m_logDock = new QDockWidget("System Log", this);
     m_logDock->setObjectName("logDock");
     m_logDock->setWidget(m_logView);
     m_logDock->setFeatures(QDockWidget::DockWidgetMovable |
@@ -166,14 +166,14 @@ void MainWindow::setupDockWidgets()
     auto *centerSplitter = new QSplitter(Qt::Vertical, this);
 
     // IP 地址池
-    auto *ipGroup = new QGroupBox("IP 地址池", this);
+    auto *ipGroup = new QGroupBox("IP Address Pool", this);
     auto *ipLayout = new QVBoxLayout(ipGroup);
     m_ipTable = new IPTableWidget(this);
     ipLayout->addWidget(m_ipTable);
     centerSplitter->addWidget(ipGroup);
 
     // 租约信息
-    auto *leaseGroup = new QGroupBox("租约信息", this);
+    auto *leaseGroup = new QGroupBox("Lease Info", this);
     auto *leaseLayout = new QVBoxLayout(leaseGroup);
     m_leaseTable = new LeaseTableWidget(this);
     leaseLayout->addWidget(m_leaseTable);
@@ -266,8 +266,8 @@ void MainWindow::onReset()
 void MainWindow::onAddClient()
 {
     bool ok;
-    QString mac = QInputDialog::getText(this, "添加客户端",
-        "输入 MAC 地址 (如 AA:BB:CC:DD:00:04):",
+    QString mac = QInputDialog::getText(this, "Add Client",
+        "Enter MAC address (e.g. AA:BB:CC:DD:00:04):",
         QLineEdit::Normal, "", &ok);
 
     if (ok && !mac.isEmpty()) {
@@ -283,8 +283,8 @@ void MainWindow::onRemoveClient()
 
     QString mac = currentText.split(" ").first();
 
-    auto result = QMessageBox::question(this, "确认移除",
-        QString("确定要移除客户端 %1 吗？\n其租约将被释放。").arg(mac));
+    auto result = QMessageBox::question(this, "Confirm Remove",
+        QString("Remove client %1?\nIts lease will be released.").arg(mac));
     if (result == QMessageBox::Yes) {
         m_controller->removeClient(mac);
         m_clientCombo->removeItem(m_clientCombo->currentIndex());
@@ -295,7 +295,7 @@ void MainWindow::onSimulationStep(const QString &step,
                                    std::shared_ptr<DhcpMessage> msg)
 {
     m_flowWidget->addStep(step, msg);
-    m_statusLabel->setText(QString("正在执行: %1").arg(step));
+    m_statusLabel->setText(QString("Running: %1").arg(step));
 }
 
 void MainWindow::onLogMessage(const QString &msg)
@@ -307,8 +307,8 @@ void MainWindow::onLogMessage(const QString &msg)
 
 void MainWindow::onClientStateChanged(const QString &mac, ClientState state)
 {
-    static const QStringList stateNames = {"空闲", "选择中", "请求中",
-                                            "已绑定", "续租中", "已释放"};
+    static const QStringList stateNames = {"Idle", "Selecting", "Requesting",
+                                            "Bound", "Renewing", "Released"};
     for (int i = 0; i < m_clientCombo->count(); ++i) {
         if (m_clientCombo->itemText(i).startsWith(mac)) {
             m_clientCombo->setItemText(i, QString("%1  [%2]")
@@ -317,13 +317,13 @@ void MainWindow::onClientStateChanged(const QString &mac, ClientState state)
         }
     }
 
-    onLogMessage(QString("  → 客户端 %1 状态: %2")
-        .arg(mac, stateNames.value(static_cast<int>(state), "未知")));
+    onLogMessage(QString("  -> Client %1 state: %2")
+        .arg(mac, stateNames.value(static_cast<int>(state), "Unknown")));
 }
 
 void MainWindow::onSimulationComplete(const QString &clientMac)
 {
-    m_statusLabel->setText(QString("模拟完成: %1").arg(clientMac));
+    m_statusLabel->setText(QString("Simulation complete: %1").arg(clientMac));
 }
 
 // ─── Refresh ────────────────────────────────────────────
@@ -359,7 +359,7 @@ void MainWindow::updateStats()
     int pct   = total > 0 ? (used * 100 / total) : 0;
 
     m_poolStatsLabel->setText(
-        QString("IP池: %1/%2 (%3%)").arg(used).arg(total).arg(pct));
+        QString("Pool: %1/%2 (%3%)").arg(used).arg(total).arg(pct));
     m_leaseStatsLabel->setText(
-        QString("活跃租约: %1").arg(lm->activeCount()));
+        QString("Active Leases: %1").arg(lm->activeCount()));
 }

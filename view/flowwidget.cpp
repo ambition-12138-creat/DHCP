@@ -13,7 +13,7 @@ void FlowWidget::setupUi()
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    m_titleLabel = new QLabel("DHCP 交互流程", this);
+    m_titleLabel = new QLabel("DHCP Flow", this);
     m_titleLabel->setStyleSheet(
         "font-weight: bold; font-size: 14px; color: #89b4fa; padding: 4px 0;");
     layout->addWidget(m_titleLabel);

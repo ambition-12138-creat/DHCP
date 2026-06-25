@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
     applyDarkTheme(app);
 
     MainWindow window;
-    window.setWindowTitle("DHCP 协议模拟系统");
+    window.setWindowTitle("DHCP Protocol Simulator");
     window.setWindowFlags(Qt::Window | Qt::WindowCloseButtonHint);
     window.resize(1200, 800);
     window.setMinimumSize(900, 600);

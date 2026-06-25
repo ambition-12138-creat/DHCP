@@ -11,7 +11,7 @@ IPTableWidget::IPTableWidget(QWidget *parent)
 void IPTableWidget::setupTable()
 {
     setColumnCount(4);
-    setHorizontalHeaderLabels({"IP 地址", "状态", "绑定客户端", "分配时间"});
+    setHorizontalHeaderLabels({"IP Address", "Status", "Client", "Allocated At"});
     horizontalHeader()->setStretchLastSection(true);
     horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
@@ -30,7 +30,7 @@ void IPTableWidget::refresh(const QVector<IPEntry> &entries)
         bool allocated = entry.isAllocated();
 
         auto *ipItem    = new QTableWidgetItem(entry.ipAddress());
-        auto *statItem  = new QTableWidgetItem(allocated ? "已分配" : "可用");
+        auto *statItem  = new QTableWidgetItem(allocated ? "Allocated" : "Available");
         auto *macItem   = new QTableWidgetItem(allocated ? entry.clientMac() : "-");
         auto *timeItem  = new QTableWidgetItem(
             allocated ? entry.allocatedTime().toString("hh:mm:ss") : "-");
@@ -65,7 +65,7 @@ void IPTableWidget::updateEntry(const IPEntry &entry)
     for (int i = 0; i < rowCount(); ++i) {
         if (item(i, 0)->text() == entry.ipAddress()) {
             bool allocated = entry.isAllocated();
-            item(i, 1)->setText(allocated ? "已分配" : "可用");
+            item(i, 1)->setText(allocated ? "Allocated" : "Available");
             item(i, 2)->setText(allocated ? entry.clientMac() : "-");
             item(i, 3)->setText(
                 allocated ? entry.allocatedTime().toString("hh:mm:ss") : "-");

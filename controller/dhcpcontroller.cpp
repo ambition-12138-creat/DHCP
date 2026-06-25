@@ -34,7 +34,7 @@ DHCPController::~DHCPController() = default;
 void DHCPController::init(const QString &baseNetwork, int startHost, int endHost)
 {
     m_poolManager->initPool(baseNetwork, startHost, endHost);
-    emit logMessage(QString("[系统] IP地址池初始化: %1.%2 - %1.%3")
+    emit logMessage(QString("[System] IP pool initialized: %1.%2 - %1.%3")
                         .arg(baseNetwork).arg(startHost).arg(endHost));
 }
 
@@ -47,7 +47,7 @@ DHCPClient *DHCPController::addClient(const QString &mac)
     connect(client, &DHCPClient::stateChanged,
             this, &DHCPController::clientStateChanged);
 
-    emit logMessage(QString("[系统] 客户端已添加: MAC=%1").arg(mac));
+    emit logMessage(QString("[System] Client added: MAC=%1").arg(mac));
     return client;
 }
 
@@ -58,7 +58,7 @@ void DHCPController::removeClient(const QString &mac)
             releaseLease(mac);
             m_stateMachine->unregisterClient(mac);
             m_clients.removeAt(i);
-            emit logMessage(QString("[系统] 客户端已移除: MAC=%1").arg(mac));
+            emit logMessage(QString("[System] Client removed: MAC=%1").arg(mac));
             return;
         }
     }
@@ -69,11 +69,11 @@ void DHCPController::startSimulation(const QString &clientMac)
     auto it = std::find_if(m_clients.begin(), m_clients.end(),
         [&](DHCPClient *c) { return c->macAddress() == clientMac; });
     if (it == m_clients.end()) {
-        emit logMessage(QString("[错误] 客户端不存在: %1").arg(clientMac));
+        emit logMessage(QString("[Error] Client not found: %1").arg(clientMac));
         return;
     }
 
-    emit logMessage(QString("========== 开始 DHCP 四步交互 (%1) ==========").arg(clientMac));
+    emit logMessage(QString("========== DHCP exchange started (%1) ==========").arg(clientMac));
 
     // Step 1: Discover
     m_stateMachine->transitionTo(clientMac, ClientState::Selecting);
@@ -162,7 +162,7 @@ void DHCPController::doRequest(const QString &clientMac,
 
         m_pendingOffers.remove(clientMac);
         emit simulationComplete(clientMac);
-        emit logMessage(QString("========== DHCP 交互完成 (%1) ==========").arg(clientMac));
+        emit logMessage(QString("========== DHCP exchange complete (%1) ==========").arg(clientMac));
     });
 }
 
@@ -178,7 +178,7 @@ void DHCPController::doRenew(const QString &clientMac)
         [&](DHCPClient *c) { return c->macAddress() == clientMac; });
 
     QString assignedIp = it != m_clients.end() ? (*it)->assignedIp() : "";
-    emit logMessage(QString("[调试] 续租: MAC=%1, assignedIp=%2, leaseCount=%3")
+    emit logMessage(QString("[Debug] Renew: MAC=%1, assignedIp=%2, leaseCount=%3")
         .arg(clientMac, assignedIp).arg(m_leaseManager->activeCount()));
 
     RenewMessage renew;
@@ -196,10 +196,10 @@ void DHCPController::doRenew(const QString &clientMac)
     if (ack) {
         m_stateMachine->transitionTo(clientMac, ClientState::Bound);
         emit simulationStep("ACK", std::make_shared<AckMessage>(*ack));
-        emit logMessage(QString("[调试] 续租成功, leaseCount=%1")
+        emit logMessage(QString("[Debug] Renew success, leaseCount=%1")
             .arg(m_leaseManager->activeCount()));
     } else {
-        emit logMessage(QString("[调试] 续租失败: processRenew返回null"));
+        emit logMessage(QString("[Debug] Renew failed: processRenew returned null"));
     }
 }
 
@@ -214,20 +214,20 @@ void DHCPController::releaseLease(const QString &clientMac)
     if (it != m_clients.end())
         (*it)->setAssignedIp(QString());
 
-    emit logMessage(QString("[系统] 租约已释放: MAC=%1 (IP释放=%2, 租约释放=%3)")
+    emit logMessage(QString("[System] Lease released: MAC=%1 (IP=%2, Lease=%3)")
         .arg(clientMac).arg(ipReleased).arg(leaseReleased));
 }
 
 void DHCPController::resetAll()
 {
-    emit logMessage(QString("[调试] resetAll: 客户端总数=%1, 活跃租约=%2")
+    emit logMessage(QString("[Debug] resetAll: clientCount=%1, activeLeases=%2")
         .arg(m_clients.size()).arg(m_leaseManager->activeCount()));
     for (auto *client : m_clients) {
-        emit logMessage(QString("[调试] 重置客户端: MAC=%1, state=%2")
+        emit logMessage(QString("[Debug] Resetting client: MAC=%1, state=%2")
             .arg(client->macAddress(), client->stateString()));
         releaseLease(client->macAddress());
         m_stateMachine->transitionTo(client->macAddress(), ClientState::Idle);
     }
     m_pendingOffers.clear();
-    emit logMessage("[系统] 系统已重置");
+    emit logMessage("[System] System reset complete");
 }

@@ -12,12 +12,12 @@ DHCPServer::DHCPServer(IPPoolManager *pool, LeaseManager *leases,
 
 std::unique_ptr<OfferMessage> DHCPServer::processDiscover(const DiscoverMessage &msg)
 {
-    emit logMessage(QString("[服务器] 收到 Discover (MAC=%1)").arg(msg.clientMac()));
+    emit logMessage(QString("[Server] Received Discover (MAC=%1)").arg(msg.clientMac()));
 
     // 从地址池分配IP
     QString offeredIp = m_pool->allocateIp(msg.clientMac());
     if (offeredIp.isEmpty()) {
-        emit logMessage("[服务器] 无可用IP地址！");
+        emit logMessage("[Server] No available IP address!");
         return nullptr;
     }
 
@@ -32,14 +32,14 @@ std::unique_ptr<OfferMessage> DHCPServer::processDiscover(const DiscoverMessage 
     offer->setDnsServer(m_dnsServer);
 
     emit offerSent(msg.clientMac(), offeredIp);
-    emit logMessage(QString("[服务器] 发送 Offer (IP=%1 → MAC=%2)")
+    emit logMessage(QString("[Server] Sent Offer (IP=%1 -> MAC=%2)")
                         .arg(offeredIp, msg.clientMac()));
     return offer;
 }
 
 std::unique_ptr<AckMessage> DHCPServer::processRequest(const RequestMessage &msg)
 {
-    emit logMessage(QString("[服务器] 收到 Request (MAC=%1, 请求IP=%2)")
+    emit logMessage(QString("[Server] Received Request (MAC=%1, IP=%2)")
                         .arg(msg.clientMac(), msg.requestedIp()));
 
     auto ack = std::make_unique<AckMessage>();
@@ -56,14 +56,14 @@ std::unique_ptr<AckMessage> DHCPServer::processRequest(const RequestMessage &msg
     m_leases->createLease(msg.clientMac(), msg.requestedIp(), 86400);
 
     emit ackSent(msg.clientMac(), msg.requestedIp());
-    emit logMessage(QString("[服务器] 发送 ACK (IP=%1 → MAC=%2)")
+    emit logMessage(QString("[Server] Sent ACK (IP=%1 -> MAC=%2)")
                         .arg(msg.requestedIp(), msg.clientMac()));
     return ack;
 }
 
 std::unique_ptr<AckMessage> DHCPServer::processRenew(const RenewMessage &msg)
 {
-    emit logMessage(QString("[服务器] 收到 Renew (MAC=%1, IP=%2)")
+    emit logMessage(QString("[Server] Received Renew (MAC=%1, IP=%2)")
                         .arg(msg.clientMac(), msg.currentIp()));
 
     if (m_leases->renewLease(msg.clientMac())) {
@@ -75,11 +75,11 @@ std::unique_ptr<AckMessage> DHCPServer::processRenew(const RenewMessage &msg)
         ack->setLeaseTime(86400);
 
         emit ackSent(msg.clientMac(), msg.currentIp());
-        emit logMessage(QString("[服务器] 续租成功 (IP=%1 → MAC=%2)")
+        emit logMessage(QString("[Server] Renew success (IP=%1 -> MAC=%2)")
                             .arg(msg.currentIp(), msg.clientMac()));
         return ack;
     }
 
-    emit logMessage(QString("[服务器] 续租失败 (MAC=%1)").arg(msg.clientMac()));
+    emit logMessage(QString("[Server] Renew failed (MAC=%1)").arg(msg.clientMac()));
     return nullptr;
 }

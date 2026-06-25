@@ -11,7 +11,7 @@ LeaseTableWidget::LeaseTableWidget(QWidget *parent)
 void LeaseTableWidget::setupTable()
 {
     setColumnCount(5);
-    setHorizontalHeaderLabels({"客户端 MAC", "IP 地址", "开始时间", "剩余时间(s)", "状态"});
+    setHorizontalHeaderLabels({"Client MAC", "IP Address", "Start Time", "Remaining (s)", "Status"});
     horizontalHeader()->setStretchLastSection(true);
     horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
@@ -37,7 +37,7 @@ void LeaseTableWidget::refresh(const QVector<LeaseInfo> &leases)
         // remaining time with color gradient
         qint64 remaining = lease.remainingSeconds();
         auto *remainItem = new QTableWidgetItem(
-            remaining > 0 ? QString::number(remaining) : "0 (已过期)");
+            remaining > 0 ? QString::number(remaining) : "0 (Expired)");
 
         // red if < 60s, yellow if < 600s, green otherwise
         if (remaining <= 0)
@@ -55,10 +55,10 @@ void LeaseTableWidget::refresh(const QVector<LeaseInfo> &leases)
         QString status;
         QColor statusColor;
         switch (lease.status()) {
-        case LeaseStatus::Active:   status = "活跃";   statusColor = "#a6e3a1"; break;
-        case LeaseStatus::Expired:  status = "已过期"; statusColor = "#f38ba8"; break;
-        case LeaseStatus::Released: status = "已释放"; statusColor = "#6c7086"; break;
-        case LeaseStatus::Renewed:  status = "已续租"; statusColor = "#89b4fa"; break;
+        case LeaseStatus::Active:   status = "Active";   statusColor = "#a6e3a1"; break;
+        case LeaseStatus::Expired:  status = "Expired";  statusColor = "#f38ba8"; break;
+        case LeaseStatus::Released: status = "Released"; statusColor = "#6c7086"; break;
+        case LeaseStatus::Renewed:  status = "Renewed";  statusColor = "#89b4fa"; break;
         }
         auto *statusItem = new QTableWidgetItem(status);
         statusItem->setForeground(statusColor);

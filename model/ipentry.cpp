@@ -25,5 +25,5 @@ void IPEntry::release()
 
 QString IPEntry::statusString() const
 {
-    return m_allocated ? QString("已分配 (%1)").arg(m_clientMac) : "可用";
+    return m_allocated ? QString("Allocated (%1)").arg(m_clientMac) : "Available";
 }

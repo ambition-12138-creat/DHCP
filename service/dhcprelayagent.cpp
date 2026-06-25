@@ -10,7 +10,7 @@ DHCPRelayAgent::DHCPRelayAgent(DHCPServer *server, QObject *parent)
 
 void DHCPRelayAgent::forwardToServer(std::unique_ptr<DhcpMessage> msg)
 {
-    emit logMessage(QString("[中继代理] 转发 %1 到服务器 (来自子网 %2)")
+    emit logMessage(QString("[Relay] Forward %1 to server (from subnet %2)")
                         .arg(msg->typeString(), m_clientSubnet));
     emit messageForwarded("Client→Server", msg->summary());
     // 实际转发逻辑：修改报文源地址为中继IP后发送给服务器
@@ -18,7 +18,7 @@ void DHCPRelayAgent::forwardToServer(std::unique_ptr<DhcpMessage> msg)
 
 void DHCPRelayAgent::forwardToClient(std::unique_ptr<DhcpMessage> msg)
 {
-    emit logMessage(QString("[中继代理] 转发 %1 到客户端 (目标子网 %2)")
+    emit logMessage(QString("[Relay] Forward %1 to client (target subnet %2)")
                         .arg(msg->typeString(), m_clientSubnet));
     emit messageForwarded("Server→Client", msg->summary());
     // 实际转发逻辑：将服务器响应转发给对应客户端
